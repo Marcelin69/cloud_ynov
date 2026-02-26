@@ -13,10 +13,11 @@ export async function creatJob(state, formData) {
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({ fileName: jobTitle, contentType: "text/plain"  }),
+        body: JSON.stringify({ fileName: jobTitle }),
     });
-
-    console.log("Response:", response);
+    
+    const data = await response.json();
+    console.log("Data:", data);
 
 
     return { message: `Job created successfully with title: ${jobTitle}`, error: null };

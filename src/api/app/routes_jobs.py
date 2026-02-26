@@ -32,11 +32,14 @@ def get_job(job_id: str) -> JobCreateResponse:
     container = get_cosmos_container()
     try:
         item = container.read_item(item=job_id, partition_key="JOB")
+        blob_path = f"input/{item['id']}/{item['fileName']}"
+        upload_url = generate_upload_sas(blob_name=blob_path)
         return JobCreateResponse(
         jobId=item["id"],
         status=item["status"],
         createAt=item["createAt"],
-        updateAt=item["updateAt"]
+        updateAt=item["updateAt"],
+        uploadUrl=upload_url
     )
     except CosmosHttpResponseError as e:
         if getattr(e, 'status_code', None) == 404:
