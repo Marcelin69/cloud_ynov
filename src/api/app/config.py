@@ -8,14 +8,6 @@ class Settings(BaseSettings):
     cosmos_database: str = "db-dev"
     cosmos_container: str = "jobs"
     blob_connection_string: str
-    blob_container_name: str
-    
+    blob_container: str
 
 settings = Settings()
-
-print(settings.cosmos_endpoint)
-print(settings.cosmos_key)
-print(settings.blob_connection_string)
-print(settings.blob_container_name)
-print(settings.cosmos_database)
-print(settings.cosmos_container)
