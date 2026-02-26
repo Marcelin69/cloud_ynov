@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     cosmos_container: str = "jobs"
     blob_connection_string: str
     blob_container_name: str
+    blob_account_key: str
     
 
 settings = Settings()
