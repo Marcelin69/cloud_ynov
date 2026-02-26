@@ -35,7 +35,7 @@ jobs:
                 file: ./src/api/Dockerfile
                 push: true
                 tags: |
-                  ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}
+                  ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
                   ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             - name: Deploy to Azure Container Apps
               uses: azure/webapps-deploy@v2
