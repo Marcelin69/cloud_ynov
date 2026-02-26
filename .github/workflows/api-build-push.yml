@@ -31,13 +31,12 @@ jobs:
             - name: Build and push Docker image
               uses: docker/build-push-action@v6
               with:
-                context: .
-                file: ./src/api
+                context: ./src/api
+                file: ./src/api/Dockerfile
                 push: true
                 tags: |
-                    ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
-                    ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
+                  ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+                  ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
 
 
