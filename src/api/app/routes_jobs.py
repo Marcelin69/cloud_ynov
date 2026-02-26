@@ -17,7 +17,7 @@ def create_job(req: JobCreateRequest):
     except CosmosHttpResponseError as e:
         raise HTTPException(status_code=400, detail=f"Cosmos error:{getattr(e, 'message', str(e))}")
     blob_path = f"input/{entity['id']}/{req.fileName}"
-    upload_url = generate_upload_sas(blob_name=blob_path, content_type=req.contentType)
+    upload_url = generate_upload_sas(blob_name=blob_path)
     return JobCreateResponse(
         jobId=entity["id"],
         status=entity["status"],

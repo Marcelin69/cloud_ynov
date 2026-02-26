@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from .routes_jobs import router as jobs_router
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="Doc processing API", description="API for managing jobs", version="1.0.0")
 
 origins = ["*"]  # Allow all origins for simplicity, adjust in production

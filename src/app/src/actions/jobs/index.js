@@ -8,7 +8,7 @@ export async function creatJob(state, formData) {
         return { message: null, error: "Job title is required" };
     }
 
-    const response = await fetch("https://api-dev-mt-ardceph4g4d5fsgm.francecentral-01.azurewebsites.net/jobs", {
+    const response = await fetch(" http://127.0.0.1:8000/jobs", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
