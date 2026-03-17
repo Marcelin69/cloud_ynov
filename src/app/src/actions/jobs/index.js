@@ -9,7 +9,7 @@ export async function creatJob(state, formData) {
     }
 console.log("start");
 
-    const response = await fetch("http://127.0.0.1:8000/jobs/", {
+    const response = await fetch("https://apijob-fpe6hbe2h9c4agh2.francecentral-01.azurewebsites.net/jobs/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
