@@ -23,7 +23,8 @@ def create_job(req: JobCreateRequest):
         status=entity["status"],
         createAt=entity["createAt"],
         updateAt=entity["updateAt"],
-        uploadUrl=upload_url
+        uploadUrl=upload_url,
+        categorie=entity["categorie"]
     )
 
 
@@ -39,7 +40,8 @@ def get_job(job_id: str) -> JobCreateResponse:
         status=item["status"],
         createAt=item["createAt"],
         updateAt=item["updateAt"],
-        uploadUrl=upload_url
+        uploadUrl=upload_url,
+        categorie=item["categorie"]
     )
     except CosmosHttpResponseError as e:
         if getattr(e, 'status_code', None) == 404:
