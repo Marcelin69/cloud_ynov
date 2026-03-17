@@ -7,8 +7,9 @@ export async function creatJob(state, formData) {
     if (!jobTitle) {
         return { message: null, error: "Job title is required" };
     }
+console.log("start");
 
-    const response = await fetch(" http://127.0.0.1:8000/jobs", {
+    const response = await fetch("http://127.0.0.1:8000/jobs/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -18,9 +19,11 @@ export async function creatJob(state, formData) {
     
     const data = await response.json();
     console.log("Data:", data);
-
-
+    if (!data.OK) {
     return { message: `Job created successfully with title: ${jobTitle}`, error: null };
+        
+    }
+    return { message: null, error: data.error || "Failed to create job" };
 }
 
 export async function editJob(state, formData) {
