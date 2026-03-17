@@ -17,6 +17,7 @@ class JobCreateResponse(BaseModel):
     createAt:str
     updateAt:str
     uploadUrl:str
+    categorie:str
     
 def job_to_entity(req:JobCreateRequest) -> Dict[str,Any]:
     job_id = str(uuid.uuid4())
@@ -30,7 +31,8 @@ def job_to_entity(req:JobCreateRequest) -> Dict[str,Any]:
         "updateAt": ts,
         "createAt": ts,
         "resultSummary": None,
-        "error": None
+        "error": None,
+        "categorie": ""
     }
    
     
