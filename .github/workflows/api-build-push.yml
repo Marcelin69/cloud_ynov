@@ -37,10 +37,23 @@ jobs:
                 tags: |
                    ${{ secrets.ACR_LOGIN_SERVER }}/samples/${{ env.IMAGE_NAME }}:latest
                    ${{ secrets.ACR_LOGIN_SERVER }}/samples/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            - name: Deploy to Azure Web App
-              uses: azure/webapps-deploy@v3
+            - name: Azure Login
+              uses: azure/login@v1
               with:
-                app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-                images: ${{ secrets.ACR_LOGIN_SERVER }}/samples/${{ env.IMAGE_NAME }}:${{ github.sha }}
-                publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-
+                creds: ${{ secrets.AZURE_CREDENTIALS }}
+              
+            - name: Configure container
+              run: |
+                az webapp config container set \
+                  --name apiJob \
+                  --resource-group dov-dynamic \
+                  --docker-custom-image-name ${{ secrets.ACR_LOGIN_SERVER }}/samples/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+                  --docker-registry-server-url https://${{ secrets.ACR_LOGIN_SERVER }}
+              
+            - name: Restart App Service
+              run: |
+                az webapp restart \
+                  --name apiJob \
+                  --resource-group dov-dynamic
+            - name: Debug image
+              run: echo "Deploying image ${{ secrets.ACR_LOGIN_SERVER }}/samples/${{ env.IMAGE_NAME }}:${{ github.sha }}"
