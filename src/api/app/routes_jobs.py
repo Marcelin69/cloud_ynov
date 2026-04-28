@@ -8,6 +8,27 @@ from .blob_service import generate_upload_sas
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
+@router.get("/", response_model=list[JobCreateResponse])
+def list_jobs():
+    container = get_cosmos_container()
+    items = list(container.query_items(
+        query="SELECT * FROM c WHERE c.pk = 'JOB' ORDER BY c.createAt DESC",
+        enable_cross_partition_query=True
+    ))
+    return [
+        JobCreateResponse(
+            jobId=item["id"],
+            status=item.get("status", "CREATED"),
+            createAt=item.get("createAt", ""),
+            updateAt=item.get("updateAt", ""),
+            uploadUrl="",
+            categorie=item.get("categorie", ""),
+            tags=item.get("tags", []),
+            fileName=item.get("fileName", ""),
+        )
+        for item in items
+    ]
+
 @router.post("/", response_model=JobCreateResponse, status_code=201)
 def create_job(req: JobCreateRequest):
     container = get_cosmos_container()

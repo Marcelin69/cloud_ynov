@@ -12,12 +12,14 @@ class JobCreateRequest(BaseModel):
     contentType: str = Field(default="application/octet-stream", max_length=255)
 
 class JobCreateResponse(BaseModel):
-    jobId:str
-    status:str
-    createAt:str
-    updateAt:str
-    uploadUrl:str
-    categorie:str
+    jobId: str
+    status: str
+    createAt: str
+    updateAt: str
+    uploadUrl: str
+    categorie: str
+    tags: list = []
+    fileName: str = ""
     
 def job_to_entity(req:JobCreateRequest) -> Dict[str,Any]:
     job_id = str(uuid.uuid4())

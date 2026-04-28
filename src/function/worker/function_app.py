@@ -119,6 +119,23 @@ def generate_tags(file_name: str) -> list:
         return _tags_fallback(file_name)
 
 
+# ── 0. Negotiate (SignalR) ───────────────────────────────────────────────────
+
+@app.route(route="negotiate", auth_level=func.AuthLevel.ANONYMOUS)
+@app.generic_input_binding(
+    arg_name="connectionInfo",
+    type="signalRConnectionInfo",
+    hubName="jobNotifications",
+    connectionStringSetting="SIGNALR_CONNECTION_STRING"
+)
+def negotiate(_req: func.HttpRequest, connectionInfo) -> func.HttpResponse:
+    return func.HttpResponse(
+        body=connectionInfo,
+        mimetype="application/json",
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+
 # ── 1. Blob Trigger ──────────────────────────────────────────────────────────
 
 @app.blob_trigger(arg_name="myblob", path="dev-storage/input/{name}",

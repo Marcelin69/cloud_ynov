@@ -2,20 +2,30 @@
 
 import { creatJob, editJob } from "@/actions/jobs";
 import { useActionState, useEffect, useRef, useState } from "react";
+import * as signalR from "@microsoft/signalr";
 
-const initialState = {
-    message: null,
-    error: null,
-    uploadUrl: null,
-    jobId: null,
+const FUNCTION_APP_URL = process.env.NEXT_PUBLIC_FUNCTION_APP_URL ||
+    "https://prof-fonction-app-mt-b0axg8fkaxapdcaf.francecentral-01.azurewebsites.net";
+
+const STATUS_LABELS = {
+    UPLOADED: { label: "Fichier reçu", color: "indigo" },
+    QUEUED: { label: "En file d'attente", color: "amber" },
+    PROCESSING: { label: "Traitement IA en cours…", color: "amber" },
+    PROCESSED: { label: "Tagging terminé", color: "emerald" },
+    ERROR: { label: "Erreur de traitement", color: "rose" },
 };
+
+const initialState = { message: null, error: null, uploadUrl: null, jobId: null };
 
 const CreatJob = ({ id }) => {
     const action = id ? editJob : creatJob;
     const [state, formAction, pending] = useActionState(action, initialState);
     const fileRef = useRef(null);
+    const connectionRef = useRef(null);
     const [uploadStatus, setUploadStatus] = useState(null);
+    const [jobStatus, setJobStatus] = useState(null);
 
+    // Upload file to Azure Blob Storage via SAS URL
     useEffect(() => {
         if (!state?.uploadUrl || !fileRef.current) return;
         const file = fileRef.current;
@@ -34,6 +44,38 @@ const CreatJob = ({ id }) => {
             })
             .catch((err) => setUploadStatus(`error: ${err.message}`));
     }, [state?.uploadUrl]);
+
+    // Connect to SignalR after upload is done
+    useEffect(() => {
+        if (uploadStatus !== "done" || !state?.jobId) return;
+
+        const jobId = state.jobId;
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`${FUNCTION_APP_URL}/api`, {
+                skipNegotiation: false,
+            })
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Warning)
+            .build();
+
+        connection.on("jobStatusUpdate", (data) => {
+            if (data.documentId === jobId) {
+                setJobStatus(data);
+            }
+        });
+
+        connection.start()
+            .then(() => console.log("SignalR connected"))
+            .catch((err) => console.warn("SignalR error:", err));
+
+        connectionRef.current = connection;
+
+        return () => {
+            connection.stop();
+        };
+    }, [uploadStatus, state?.jobId]);
+
+    const statusInfo = jobStatus ? STATUS_LABELS[jobStatus.status] : null;
 
     return (
         <div className="max-w-3xl mx-auto px-6 py-14">
@@ -55,13 +97,9 @@ const CreatJob = ({ id }) => {
                         <label htmlFor="jobTitle" className="block text-sm font-medium text-slate-200">
                             Nom du fichier
                         </label>
-                        <p className="text-xs text-slate-500">
-                            Exemple: client-report-mars-2026.csv
-                        </p>
+                        <p className="text-xs text-slate-500">Exemple: client-report-mars-2026.csv</p>
                         <div className="relative">
-                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-                                #
-                            </span>
+                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">#</span>
                             <input
                                 id="jobTitle"
                                 type="text"
@@ -89,28 +127,24 @@ const CreatJob = ({ id }) => {
                         />
                     </div>
 
-                    {state?.error ? (
+                    {state?.error && (
                         <div className="rounded-xl border border-rose-800/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-300">
                             {state.error}
                         </div>
-                    ) : null}
+                    )}
 
-                    {state?.message ? (
+                    {state?.message && (
                         <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-300">
                             {state.message}
                         </div>
-                    ) : null}
+                    )}
 
                     {uploadStatus === "uploading" && (
                         <div className="rounded-xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-3 text-sm text-indigo-300">
                             Upload en cours vers Azure Blob Storage…
                         </div>
                     )}
-                    {uploadStatus === "done" && (
-                        <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-300">
-                            Fichier uploadé — traitement en cours…
-                        </div>
-                    )}
+
                     {uploadStatus?.startsWith("error") && (
                         <div className="rounded-xl border border-rose-800/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-300">
                             {uploadStatus}
@@ -124,7 +158,7 @@ const CreatJob = ({ id }) => {
                         <button
                             type="submit"
                             disabled={pending}
-                            className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/50 transition-all hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                            className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/50 transition-all hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {pending ? "Création en cours..." : "Créer le job"}
                         </button>
@@ -132,11 +166,57 @@ const CreatJob = ({ id }) => {
                 </form>
             </div>
 
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
+            {/* Notifications temps réel SignalR */}
+            {uploadStatus === "done" && (
+                <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/80 p-6 space-y-4">
+                    <h2 className="text-sm font-semibold text-white uppercase tracking-widest">
+                        Suivi temps réel
+                    </h2>
+
+                    {!jobStatus ? (
+                        <div className="flex items-center gap-3 text-sm text-slate-400">
+                            <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                            En attente des notifications Azure…
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className={`flex items-center gap-3 text-sm text-${statusInfo?.color}-300`}>
+                                <span className={`inline-block w-2 h-2 rounded-full bg-${statusInfo?.color}-400 ${jobStatus.status === "PROCESSING" ? "animate-pulse" : ""}`} />
+                                <span className="font-medium">{jobStatus.status}</span>
+                                <span className="text-slate-400">— {statusInfo?.label}</span>
+                            </div>
+
+                            {jobStatus.tags && jobStatus.tags.length > 0 && (
+                                <div className="pt-2">
+                                    <p className="text-xs text-slate-500 mb-2">Tags générés par l&apos;IA :</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {jobStatus.tags.map((tag) => (
+                                            <span
+                                                key={tag}
+                                                className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-600/20 border border-indigo-800/50 text-indigo-300"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {jobStatus.status === "ERROR" && (
+                                <p className="text-xs text-rose-400">
+                                    Le traitement a échoué. Vérifiez les logs Azure Functions.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
                 Le fichier est uploadé directement vers Azure Blob Storage via une URL SAS sécurisée, puis traité automatiquement.
             </div>
         </div>
     );
-}
+};
 
 export default CreatJob;
