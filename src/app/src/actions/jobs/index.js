@@ -19,11 +19,15 @@ console.log("start");
     
     const data = await response.json();
     console.log("Data:", data);
-    if (!data.OK) {
-    return { message: `Job created successfully with title: ${jobTitle}`, error: null };
-        
+    if (!response.ok) {
+        return { message: null, error: data.detail || "Failed to create job" };
     }
-    return { message: null, error: data.error || "Failed to create job" };
+    return {
+        message: `Job créé : ${jobTitle}`,
+        error: null,
+        uploadUrl: data.uploadUrl,
+        jobId: data.jobId,
+    };
 }
 
 export async function editJob(state, formData) {

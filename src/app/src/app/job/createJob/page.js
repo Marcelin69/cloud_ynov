@@ -1,16 +1,39 @@
 'use client';
 
 import { creatJob, editJob } from "@/actions/jobs";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 const initialState = {
     message: null,
     error: null,
+    uploadUrl: null,
+    jobId: null,
 };
 
 const CreatJob = ({ id }) => {
     const action = id ? editJob : creatJob;
     const [state, formAction, pending] = useActionState(action, initialState);
+    const fileRef = useRef(null);
+    const [uploadStatus, setUploadStatus] = useState(null);
+
+    useEffect(() => {
+        if (!state?.uploadUrl || !fileRef.current) return;
+        const file = fileRef.current;
+        setUploadStatus("uploading");
+        fetch(state.uploadUrl, {
+            method: "PUT",
+            headers: {
+                "x-ms-blob-type": "BlockBlob",
+                "Content-Type": file.type || "application/octet-stream",
+            },
+            body: file,
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error(`Upload échoué (${res.status})`);
+                setUploadStatus("done");
+            })
+            .catch((err) => setUploadStatus(`error: ${err.message}`));
+    }, [state?.uploadUrl]);
 
     return (
         <div className="max-w-3xl mx-auto px-6 py-14">
@@ -53,6 +76,19 @@ const CreatJob = ({ id }) => {
                         </div>
                     </div>
 
+                    <div className="space-y-2">
+                        <label htmlFor="file" className="block text-sm font-medium text-slate-200">
+                            Fichier à uploader
+                        </label>
+                        <input
+                            id="file"
+                            type="file"
+                            required
+                            onChange={(e) => { fileRef.current = e.target.files?.[0] ?? null; }}
+                            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-500 transition-all"
+                        />
+                    </div>
+
                     {state?.error ? (
                         <div className="rounded-xl border border-rose-800/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-300">
                             {state.error}
@@ -64,6 +100,22 @@ const CreatJob = ({ id }) => {
                             {state.message}
                         </div>
                     ) : null}
+
+                    {uploadStatus === "uploading" && (
+                        <div className="rounded-xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-3 text-sm text-indigo-300">
+                            Upload en cours vers Azure Blob Storage…
+                        </div>
+                    )}
+                    {uploadStatus === "done" && (
+                        <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-300">
+                            Fichier uploadé — traitement en cours…
+                        </div>
+                    )}
+                    {uploadStatus?.startsWith("error") && (
+                        <div className="rounded-xl border border-rose-800/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-300">
+                            {uploadStatus}
+                        </div>
+                    )}
 
                     <div className="flex items-center justify-between gap-3 pt-1">
                         <p className="text-xs text-slate-500">
@@ -81,7 +133,7 @@ const CreatJob = ({ id }) => {
             </div>
 
             <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
-                Après création, tu pourras utiliser l&apos;URL SAS retournée par l&apos;API pour uploader ton fichier dans Azure Blob Storage.
+                Le fichier est uploadé directement vers Azure Blob Storage via une URL SAS sécurisée, puis traité automatiquement.
             </div>
         </div>
     );
