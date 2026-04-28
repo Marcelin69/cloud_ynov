@@ -12,8 +12,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       - name: Checkout repo
@@ -30,25 +28,21 @@ jobs:
         working-directory: ./src/app
         run: npm ci
 
-      - name: Build Next.js (standalone)
+      - name: Build Next.js
         working-directory: ./src/app
         run: npm run build
 
-      - name: Prepare standalone package
+      - name: Package standalone app
+        working-directory: ./src/app
         run: |
-          mkdir -p build
-          # Copier le serveur standalone
-          cp -r src/app/.next/standalone/* build/
-          # Copier TOUT le dossier .next nécessaire
-          cp -r src/app/.next build/.next
-          # Copier public
-          cp -r src/app/public build/
+          cd .next/standalone
+          zip -r ../../../app.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: build
+          path: app.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -59,6 +53,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+
+      - name: Unzip package
+        run: unzip app.zip
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
