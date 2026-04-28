@@ -60,4 +60,4 @@ jobs:
           app-name: 'frontend-doco'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND_DOCO }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_603B0301DCBC48CB9000282FE72DCD53 }}
