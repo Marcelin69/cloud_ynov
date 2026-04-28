@@ -53,6 +53,7 @@ const CreatJob = ({ id }) => {
         const connection = new signalR.HubConnectionBuilder()
             .withUrl(`${FUNCTION_APP_URL}/api`, {
                 skipNegotiation: false,
+                withCredentials: false,
             })
             .withAutomaticReconnect()
             .configureLogging(signalR.LogLevel.Warning)

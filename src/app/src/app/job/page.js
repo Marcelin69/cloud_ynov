@@ -33,7 +33,7 @@ export default function JobsPage() {
     // SignalR real-time updates
     useEffect(() => {
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`${FUNCTION_APP_URL}/api`, { skipNegotiation: false })
+            .withUrl(`${FUNCTION_APP_URL}/api`, { skipNegotiation: false, withCredentials: false })
             .withAutomaticReconnect()
             .configureLogging(signalR.LogLevel.Warning)
             .build();
