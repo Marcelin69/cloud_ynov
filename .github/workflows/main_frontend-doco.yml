@@ -37,6 +37,7 @@ jobs:
         run: |
           cp -r src/app/.next/static src/app/.next/standalone/.next/static
           cp -r src/app/public src/app/.next/standalone/public
+          echo '{"scripts":{"start":"node server.js"}}' > src/app/.next/standalone/package.json
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
