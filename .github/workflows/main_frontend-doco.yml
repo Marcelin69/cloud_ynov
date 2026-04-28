@@ -44,21 +44,33 @@ jobs:
         with:
           name: node-app
           path: src/app/.next/standalone
-
+      
   deploy:
     runs-on: ubuntu-latest
     needs: build
-
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: node-app
-
+        
+      # Étape indispensable pour utiliser 'az webapp'
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }} 
+        
+      - name: Set Web App Port
+        run: |
+          az webapp config appsettings set \
+            --name 'frontend-doco' \
+            --resource-group 'TON_RESOURCE_GROUP' \
+            --settings WEBSITES_PORT=3000 HOSTNAME=0.0.0.0
+        
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'frontend-doco'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_603B0301DCBC48CB9000282FE72DCD53 }}
+          publish-profile: ${{  secrets.AZUREAPPSERVICE_PUBLISHPROFILE_603B0301DCBC48CB9000282FE72DCD53}}
