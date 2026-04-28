@@ -121,12 +121,21 @@ def generate_tags(file_name: str) -> list:
 
 # ── 0. Negotiate (SignalR) ───────────────────────────────────────────────────
 
-@app.route(route="negotiate", auth_level=func.AuthLevel.ANONYMOUS)
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, x-requested-with",
+}
+
+@app.route(route="negotiate", auth_level=func.AuthLevel.ANONYMOUS, methods=["GET", "POST", "OPTIONS"])
 def negotiate(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method == "OPTIONS":
+        return func.HttpResponse(status_code=204, headers=CORS_HEADERS)
+
     connection_string = os.environ.get("SIGNALR_CONNECTION_STRING", "")
     hub_name = os.environ.get("SIGNALR_HUB_NAME", "jobNotifications")
     if not connection_string:
-        return func.HttpResponse("SIGNALR_CONNECTION_STRING not set", status_code=500)
+        return func.HttpResponse("SIGNALR_CONNECTION_STRING not set", status_code=500, headers=CORS_HEADERS)
 
     params = dict(p.split("=", 1) for p in connection_string.split(";") if "=" in p)
     endpoint = params.get("Endpoint", "").rstrip("/")
@@ -144,7 +153,7 @@ def negotiate(req: func.HttpRequest) -> func.HttpResponse:
     return func.HttpResponse(
         body=json.dumps({"url": client_url, "accessToken": token}),
         mimetype="application/json",
-        headers={"Access-Control-Allow-Origin": "*"}
+        headers=CORS_HEADERS
     )
 
 
