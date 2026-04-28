@@ -37,8 +37,11 @@ jobs:
       - name: Prepare standalone package
         run: |
           mkdir -p build
+          # Copier le serveur standalone
           cp -r src/app/.next/standalone/* build/
-          cp -r src/app/.next/static build/.next/
+          # Copier TOUT le dossier .next nécessaire
+          cp -r src/app/.next build/.next
+          # Copier public
           cp -r src/app/public build/
 
       - name: Upload artifact
