@@ -54,19 +54,6 @@ jobs:
         with:
           name: node-app
         
-      # Étape indispensable pour utiliser 'az webapp'
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }} 
-        
-      - name: Configure Web App settings
-        run: |
-          az webapp config appsettings set \
-            --name 'frontend-doco' \
-            --resource-group 'dov-dynamic' \
-            --settings WEBSITES_PORT=3000 SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false
-        
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
