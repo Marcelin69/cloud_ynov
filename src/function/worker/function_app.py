@@ -122,7 +122,7 @@ def generate_tags(file_name: str) -> list:
 # ── 0. Negotiate (SignalR) ───────────────────────────────────────────────────
 
 @app.route(route="negotiate", auth_level=func.AuthLevel.ANONYMOUS)
-def negotiate(_req: func.HttpRequest) -> func.HttpResponse:
+def negotiate(req: func.HttpRequest) -> func.HttpResponse:
     connection_string = os.environ.get("SIGNALR_CONNECTION_STRING", "")
     hub_name = os.environ.get("SIGNALR_HUB_NAME", "jobNotifications")
     if not connection_string:
