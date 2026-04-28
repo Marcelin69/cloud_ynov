@@ -122,15 +122,27 @@ def generate_tags(file_name: str) -> list:
 # ── 0. Negotiate (SignalR) ───────────────────────────────────────────────────
 
 @app.route(route="negotiate", auth_level=func.AuthLevel.ANONYMOUS)
-@app.generic_input_binding(
-    arg_name="connectionInfo",
-    type="signalRConnectionInfo",
-    hubName="jobNotifications",
-    connectionStringSetting="SIGNALR_CONNECTION_STRING"
-)
-def negotiate(_req: func.HttpRequest, connectionInfo) -> func.HttpResponse:
+def negotiate(_req: func.HttpRequest) -> func.HttpResponse:
+    connection_string = os.environ.get("SIGNALR_CONNECTION_STRING", "")
+    hub_name = os.environ.get("SIGNALR_HUB_NAME", "jobNotifications")
+    if not connection_string:
+        return func.HttpResponse("SIGNALR_CONNECTION_STRING not set", status_code=500)
+
+    params = dict(p.split("=", 1) for p in connection_string.split(";") if "=" in p)
+    endpoint = params.get("Endpoint", "").rstrip("/")
+    access_key = params.get("AccessKey", "")
+
+    client_url = f"{endpoint}/client/?hub={hub_name}"
+    header = base64.urlsafe_b64encode(b'{"alg":"HS256","typ":"JWT"}').decode().rstrip("=")
+    payload_str = json.dumps({"aud": client_url, "exp": int(time.time()) + 3600, "iat": int(time.time())})
+    payload = base64.urlsafe_b64encode(payload_str.encode()).decode().rstrip("=")
+    signing_input = f"{header}.{payload}".encode()
+    sig = hmac.new(access_key.encode(), signing_input, hashlib.sha256).digest()
+    signature = base64.urlsafe_b64encode(sig).decode().rstrip("=")
+    token = f"{header}.{payload}.{signature}"
+
     return func.HttpResponse(
-        body=connectionInfo,
+        body=json.dumps({"url": client_url, "accessToken": token}),
         mimetype="application/json",
         headers={"Access-Control-Allow-Origin": "*"}
     )
