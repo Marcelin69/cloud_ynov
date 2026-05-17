@@ -11,6 +11,45 @@ Ce projet implémente un **pipeline serverless de traitement de documents** sur 
 
 
 ## Architecture
+[Utilisateur]
+     │
+     ▼
+[Next.js Frontend]  ──────────────────────────────────────────────┐
+     │                                                             │
+     │ 1. POST /jobs/                                              │ SignalR
+     ▼                                                             │ (temps réel)
+[FastAPI – apiJob]                                                 │
+     │                                                             │
+     │ 2. Crée le job dans Cosmos DB (CREATED)                     │
+     │ 3. Génère une URL SAS (upload sécurisé)                     │
+     │                                                             │
+     ▼                                                             │
+[Azure Blob Storage]                                               │
+     │                                                             │
+     │ 4. Blob Trigger (upload détecté)                            │
+     ▼                                                             │
+[Azure Function – WorkerFile]                                      │
+     │ 5. Cosmos DB → UPLOADED ──────────────────────SignalR ──────┘
+     │ 6. Cosmos DB → QUEUED   ──────────────────────SignalR ──────┐
+     │ 7. Publie sur Service Bus                                    │
+     ▼                                                             │
+[Azure Service Bus – Queue "job-processing"]                       │
+     │                                                             │
+     │ 8. Service Bus Trigger                                       │
+     ▼                                                             │
+[Azure Function – ProcessJob]                                      │
+     │ 9. Cosmos DB → PROCESSING ─────────────────SignalR ─────────┤
+     │ 10. AZURE LANGUAGE génère des tags IA                         │
+     │ 11. Cosmos DB → PROCESSED (+ tags) ───────SignalR ──────────┘
+     │
+     │ Si échec répété (max 3 tentatives) :
+     ▼
+[Service Bus Dead Letter Queue]
+     │
+     ▼
+[Azure Function – ProcessDLQ]
+     │ 12. Cosmos DB → ERROR ──────────────────────SignalR ──────→ [Frontend]
+
 
 
 ### 1. Upload du fichier
