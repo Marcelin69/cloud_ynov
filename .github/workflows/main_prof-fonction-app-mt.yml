@@ -8,6 +8,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "src/function/**"
+      - ".github/workflows/main_prof-fonction-app-mt.yml"
   workflow_dispatch:
 
 env:
