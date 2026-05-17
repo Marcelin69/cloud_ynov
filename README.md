@@ -10,46 +10,68 @@ Groupe : Marcelin Tingougoui & Hansly AGBAMATE
 Ce projet implémente un **pipeline serverless de traitement de documents** sur Microsoft Azure. L'utilisateur uploade un fichier via une interface web. Le système détecte automatiquement l'upload, analyse le fichier par intelligence artificielle pour générer des tags descriptifs, et notifie le frontend en temps réel à chaque étape.
 
 
+## Frontend en ligne
+
+Le frontend est disponible ici : https://frontend-doco-crfxfzb9a8hpehgj.francecentral-01.azurewebsites.net/
+
+
 ## Architecture
+
+Le pipeline est composé de 3 zones principales :
+
+1. Frontend Next.js
+2. API FastAPI
+3. Azure serverless (Blob Storage, Functions, Service Bus, Cosmos DB, SignalR)
+
+```text
 [Utilisateur]
      │
      ▼
-[Next.js Frontend]  ──────────────────────────────────────────────┐
-     │                                                             │
-     │ 1. POST /jobs/                                              │ SignalR
-     ▼                                                             │ (temps réel)
-[FastAPI – apiJob]                                                 │
-     │                                                             │
-     │ 2. Crée le job dans Cosmos DB (CREATED)                     │
-     │ 3. Génère une URL SAS (upload sécurisé)                     │
-     │                                                             │
-     ▼                                                             │
-[Azure Blob Storage]                                               │
-     │                                                             │
-     │ 4. Blob Trigger (upload détecté)                            │
-     ▼                                                             │
-[Azure Function – WorkerFile]                                      │
-     │ 5. Cosmos DB → UPLOADED ──────────────────────SignalR ──────┘
-     │ 6. Cosmos DB → QUEUED   ──────────────────────SignalR ──────┐
-     │ 7. Publie sur Service Bus                                    │
-     ▼                                                             │
-[Azure Service Bus – Queue "job-processing"]                       │
-     │                                                             │
-     │ 8. Service Bus Trigger                                       │
-     ▼                                                             │
-[Azure Function – ProcessJob]                                      │
-     │ 9. Cosmos DB → PROCESSING ─────────────────SignalR ─────────┤
-     │ 10. AZURE LANGUAGE génère des tags IA                         │
-     │ 11. Cosmos DB → PROCESSED (+ tags) ───────SignalR ──────────┘
-     │
-     │ Si échec répété (max 3 tentatives) :
+[Next.js Frontend]
+     │ POST /jobs
      ▼
-[Service Bus Dead Letter Queue]
+[FastAPI - API Job]
+     │
+     │ - crée un job en Cosmos DB (CREATED)
+     │ - génère une URL SAS d'upload Azure Blob
+     ▼
+[Azure Blob Storage]
+     │
+     │ - upload direct du fichier via SAS
+     ▼
+[Azure Function - WorkerFile]
+     │
+     │ - met le job à UPLOADED
+     │ - notifie le frontend via SignalR
+     │ - publie le travail sur la queue Service Bus
+     ▼
+[Azure Service Bus - queue job-processing]
+     │
+     │ - déclenchement du traitement
+     ▼
+[Azure Function - ProcessJob]
+     │
+     │ - met le job à PROCESSING
+     │ - appelle AZURE LANGUAGE ou fallback de tagging
+     │ - met le job à PROCESSED avec les tags
+     │ - notifie le frontend via SignalR
+     │
+     │ en cas d'erreurs graves :
+     ▼
+[Dead Letter Queue]
      │
      ▼
-[Azure Function – ProcessDLQ]
-     │ 12. Cosmos DB → ERROR ──────────────────────SignalR ──────→ [Frontend]
+[Azure Function - ProcessDLQ]
+     │
+     │ - met le job à ERROR
+     │ - envoie une notification de problème
+```
 
+Ce flux garantit :
+- upload direct sécurisé vers Azure Blob Storage
+- traitement asynchrone découplé avec Service Bus
+- persistance d'état dans Cosmos DB
+- notifications temps réel avec SignalR
 
 
 ### 1. Upload du fichier
@@ -198,8 +220,13 @@ tp1/
 - Azure CLI installé
 - Python 3.13
 - Node.js 18+
+- Azure Functions Core Tools (pour tester les fonctions localement)
+- `pip install -r src/api/requirements.txt` pour l’API FastAPI
+- `pip install -r src/function/requirements.txt` pour les Azure Functions
+- `npm install` dans `src/app` pour le frontend Next.js
 - Docker (pour l'API)
 
+Pour la liste complète des variables de configuration, consultez `CONFIGURATION.md`.
 
 ## Variables d'environnement
 
