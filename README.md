@@ -2,61 +2,100 @@
 
 Projet réalisé dans le cadre du cours Cloud à Ynov.
 
-Groupe : Marcelin Tingougoui & [Prénom NOM]
+Groupe : Marcelin Tingougoui & Hansly AGBAMATE
 
----
 
 ## Présentation
 
 Ce projet implémente un **pipeline serverless de traitement de documents** sur Microsoft Azure. L'utilisateur uploade un fichier via une interface web. Le système détecte automatiquement l'upload, analyse le fichier par intelligence artificielle pour générer des tags descriptifs, et notifie le frontend en temps réel à chaque étape.
 
----
 
 ## Architecture
 
-```
-[Utilisateur]
-     │
-     ▼
-[Next.js – Frontend]
-     │
-     │ 1. POST /jobs/  →  crée le job + URL SAS
-     ▼
-[FastAPI – API REST]  ──────────────────────  [Cosmos DB]
-     │                                              ▲
-     │ 2. PUT (upload direct via URL SAS)           │ lecture / écriture statut
-     ▼                                              │
-[Azure Blob Storage]                               │
-     │                                              │
-     │ 3. Blob Trigger                              │
-     ▼                                              │
-[Azure Function – WorkerFile]  ─────────────────────┤
-     │  → statut : UPLOADED, puis QUEUED            │
-     │  → notification SignalR                      │
-     │                                              │
-     │ 4. Publie sur Service Bus                    │
-     ▼                                              │
-[Azure Service Bus – Queue "job-processing"]        │
-     │                                              │
-     │ 5. Service Bus Trigger                       │
-     ▼                                              │
-[Azure Function – ProcessJob]  ─────────────────────┤
-     │  → statut : PROCESSING                       │
-     │  → Azure OpenAI : génère 3-8 tags en français│
-     │  → statut : PROCESSED + tags                 │
-     │  → notification SignalR                      │
-     │                                              │
-     │ Si échec × 3 :                               │
-     ▼                                              │
-[Dead Letter Queue]                                │
-     │                                              │
-     ▼                                              │
-[Azure Function – ProcessDLQ]  ─────────────────────┘
-     │  → statut : ERROR
-     │  → notification SignalR
-     ▼
-[Azure SignalR Service]  ──────────────────→  [Frontend – temps réel]
-```
+
+### 1. Upload du fichier
+
+L’utilisateur envoie un fichier via le frontend (Next.js).
+L’API (FastAPI) crée un **job** et retourne une **URL SAS** permettant d’uploader directement le fichier dans Azure Blob Storage.
+
+
+### 2. Détection automatique du fichier
+
+Dès que le fichier est uploadé dans le stockage :
+
+* Une Azure Function (`WorkerFile`) se déclenche automatiquement
+* Le statut du job passe à **`UPLOADED`**
+* Une notification temps réel est envoyée au frontend
+* Le job est ensuite mis en file d’attente (**`QUEUED`**) via Azure Service Bus
+
+
+### 3. Mise en file d’attente
+
+Le job est envoyé dans une queue Service Bus (`job-processing`), ce qui permet :
+
+* de découpler les traitements
+* de gérer la charge
+* d’assurer la robustesse du système
+
+
+### 4. Traitement du document
+
+Une seconde Azure Function (`ProcessJob`) traite le job :
+
+* Le statut passe à **`PROCESSING`**
+* Une notification est envoyée au frontend
+* Une IA (Azure OpenAI) analyse le nom du fichier
+* Entre 3 et 8 **tags en français** sont générés automatiquement
+
+
+### 5. Résultat final
+
+Une fois le traitement terminé :
+
+* Le statut passe à **`PROCESSED`**
+* Les tags sont enregistrés dans la base de données (Cosmos DB)
+* Le frontend reçoit une notification avec les résultats en temps réel
+
+
+###  6. Gestion des erreurs
+
+En cas d’échec répété du traitement :
+
+* Le message est envoyé dans une **Dead Letter Queue (DLQ)**
+* Une fonction dédiée (`ProcessDLQ`) :
+
+  * met le statut à **`ERROR`**
+  * enregistre l’erreur
+  * notifie le frontend
+
+
+### 7. Notifications temps réel
+
+Toutes les étapes importantes sont envoyées au frontend via **Azure SignalR** :
+
+* `UPLOADED`
+* `PROCESSING`
+* `PROCESSED`
+* `ERROR`
+
+Cela permet une mise à jour instantanée de l’interface utilisateur, sans rechargement de page.
+
+
+###  Résumé
+
+1. Upload du fichier
+2. Détection automatique
+3. Mise en queue
+4. Traitement par IA
+5. Génération de tags
+6. Résultat en temps réel
+7. Gestion des erreurs
+
+
+### Objectif
+
+Fournir un système scalable, asynchrone et temps réel pour le traitement intelligent de documents.
+
 
 ### Flux des statuts
 
@@ -65,12 +104,11 @@ CREATED → UPLOADED → QUEUED → PROCESSING → PROCESSED
                                         └─ (erreur) → ERROR
 ```
 
----
 
 ## Services Azure utilisés
 
 | Service | Rôle | Tier |
-|---|---|---|
+|
 | Azure Blob Storage | Stockage des fichiers uploadés | Standard |
 | Azure Cosmos DB | Base NoSQL — état des jobs | Free / Serverless |
 | Azure Service Bus | File de messages entre fonctions | Standard |
@@ -79,7 +117,6 @@ CREATED → UPLOADED → QUEUED → PROCESSING → PROCESSED
 | Azure App Service | Hébergement API FastAPI (Docker) | B1 |
 | Azure Static Web Apps | Hébergement frontend Next.js | Free |
 
----
 
 ## Structure du projet
 
@@ -115,7 +152,6 @@ tp1/
     └── api-build-push.yml              # Build et déploiement API
 ```
 
----
 
 ## Prérequis
 
@@ -125,14 +161,13 @@ tp1/
 - Node.js 18+
 - Docker (pour l'API)
 
----
 
 ## Variables d'environnement
 
 ### Azure Function App
 
 | Variable | Description |
-|---|---|
+|
 | `AzureWebJobsStorage` | Connexion string Azure Blob Storage |
 | `COSMOS_ENDPOINT` | URL du compte Cosmos DB |
 | `COSMOS_KEY` | Clé d'accès Cosmos DB |
@@ -148,7 +183,7 @@ tp1/
 ### API FastAPI
 
 | Variable | Description |
-|---|---|
+|
 | `COSMOS_ENDPOINT` | URL du compte Cosmos DB |
 | `COSMOS_KEY` | Clé d'accès Cosmos DB |
 | `COSMOS_DATABASE` | Nom de la base |
@@ -159,10 +194,9 @@ tp1/
 ### Frontend Next.js
 
 | Variable | Description |
-|---|---|
+|
 | `NEXT_PUBLIC_FUNCTION_APP_URL` | URL de la Function App Azure |
 
----
 
 ## Déploiement
 
@@ -186,7 +220,6 @@ Le workflow `main_frontend-doco.yml` :
 2. Build Next.js (`next build`)
 3. Déploie sur Azure Static Web Apps
 
----
 
 ## Tester le pipeline
 
@@ -207,7 +240,6 @@ Pour déclencher la DLQ :
 - Après 3 échecs, le message passe en DLQ
 - La fonction `ProcessDLQ` met le job en statut `ERROR` et notifie le frontend
 
----
 
 ## Points techniques notables
 

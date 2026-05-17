@@ -86,13 +86,11 @@ def _tags_fallback(file_name: str) -> list:
 def generate_tags(file_name: str) -> list:
     try:
         import openai
-        ai_client = openai.AzureOpenAI(
-            api_key=os.environ["AZURE_OPENAI_KEY"],
-            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-            api_version="2024-02-01"
+        ai_client = openai.OpenAI(
+            api_key=os.environ["OPENAI_API_KEY"]
         )
         response = ai_client.chat.completions.create(
-            model=os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini"),
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
