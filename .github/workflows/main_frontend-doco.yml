@@ -32,14 +32,20 @@ jobs:
         working-directory: ./src/app
         run: npm run build
 
-      # ✅ FIX IMPORTANT: package complet standalone
       - name: Prepare deployment folder
         working-directory: ./src/app
         run: |
           mkdir -p build
           cp -r .next/standalone/. build/
-          cp -r .next/static build/.next/static
-          cp -r public build/public
+          mkdir -p build/.next/static
+          cp -r .next/static/. build/.next/static/
+          cp -r public/. build/public/ 2>/dev/null || true
+          cp .next/BUILD_ID build/.next/BUILD_ID
+          for f in build-manifest.json routes-manifest.json app-build-manifest.json react-loadable-manifest.json; do
+            [ -f ".next/$f" ] && cp ".next/$f" "build/.next/$f" || true
+          done
+          echo "=== build/ ===" && ls build/
+          echo "=== build/.next/ ===" && ls build/.next/
 
       # ✅ Upload folder (plus zip fragile)
       - name: Upload artifact
