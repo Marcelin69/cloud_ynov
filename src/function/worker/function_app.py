@@ -85,33 +85,45 @@ def _tags_fallback(file_name: str) -> list:
 
 def generate_tags(file_name: str) -> list:
     try:
-        import openai
-        ai_client = openai.OpenAI(
-            api_key=os.environ["OPENAI_API_KEY"]
-        )
-        response = ai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Tu es un classificateur de documents. Réponds uniquement avec un tableau JSON valide."
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Analyse le nom de fichier suivant et génère entre 3 et 8 tags courts en français.\n"
-                        f"Nom du fichier : {file_name}\n\n"
-                        f"Retourne uniquement un tableau JSON de chaînes."
-                    )
-                }
-            ],
-            max_tokens=100
-        )
-        raw = response.choices[0].message.content.strip()
-        tags = json.loads(raw)
-        if isinstance(tags, list):
-            return [str(t).lower() for t in tags[:8]]
-        raise ValueError("Response is not a list")
+        from azure.ai.textanalytics import TextAnalyticsClient
+        from azure.core.credentials import AzureKeyCredential
+
+        endpoint = os.environ["AZURE_LANGUAGE_ENDPOINT"]
+        key = os.environ["AZURE_LANGUAGE_KEY"]
+        client = TextAnalyticsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
+
+        # Nettoie le nom de fichier pour améliorer l'analyse
+        import re
+        name_clean = re.sub(r'\.[^.]+$', '', file_name)          # retire l'extension
+        name_clean = re.sub(r'[-_]', ' ', name_clean)             # remplace - et _ par espaces
+        text = f"Document nommé {name_clean}. Fichier de type professionnel."
+
+        # Extraction des mots-clés
+        kp_result = client.extract_key_phrases([text], language="fr")
+        tags = []
+        for doc in kp_result:
+            if not doc.is_error:
+                for phrase in doc.key_phrases:
+                    tags.extend(phrase.lower().split())
+
+        # Reconnaissance d'entités pour enrichir les tags
+        er_result = client.recognize_entities([text], language="fr")
+        for doc in er_result:
+            if not doc.is_error:
+                for entity in doc.entities:
+                    tags.append(entity.text.lower())
+
+        # Dédoublonnage + ajout du type de fichier
+        ext = file_name.rsplit('.', 1)[-1].lower() if '.' in file_name else ''
+        if ext:
+            tags.append(ext)
+        tags = list(dict.fromkeys(tags))[:8]
+
+        if not tags:
+            raise ValueError("Aucun tag extrait")
+
+        logging.info(f"Azure AI Language tags: {tags}")
+        return tags
     except Exception as e:
         logging.warning(f"AI tagging failed ({e}), using fallback")
         return _tags_fallback(file_name)
