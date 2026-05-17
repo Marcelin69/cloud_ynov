@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,49 +32,29 @@ jobs:
         working-directory: ./src/app
         run: npm run build
 
-      - name: Prepare deployment folder
+      - name: Prepare deployment package
         working-directory: ./src/app
         run: |
-          mkdir -p build
-          cp -r .next/standalone/. build/
-          mkdir -p build/.next/static
-          cp -r .next/static/. build/.next/static/
-          cp -r public/. build/public/ 2>/dev/null || true
-          cp .next/BUILD_ID build/.next/BUILD_ID
-          for f in build-manifest.json routes-manifest.json app-build-manifest.json react-loadable-manifest.json; do
-            [ -f ".next/$f" ] && cp ".next/$f" "build/.next/$f" || true
+          mkdir -p deploy
+          cp -r .next/standalone/. deploy/
+          mkdir -p deploy/.next/static
+          cp -r .next/static/. deploy/.next/static/
+          [ -d public ] && cp -r public/. deploy/public/
+          cp .next/BUILD_ID deploy/.next/BUILD_ID
+          for f in build-manifest.json routes-manifest.json app-build-manifest.json react-loadable-manifest.json server-reference-manifest.json; do
+            [ -f ".next/$f" ] && cp ".next/$f" "deploy/.next/$f" || true
           done
-          echo "=== build/ ===" && ls build/
-          echo "=== build/.next/ ===" && ls build/.next/
+          echo "=== deploy/ ===" && ls deploy/
+          echo "=== deploy/.next/ ===" && ls deploy/.next/
 
-      # ✅ Upload folder (plus zip fragile)
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: src/app/build
-          if-no-files-found: error
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: node-app
-
-      - name: Debug downloaded files
-        run: |
-          echo "=== Root ===" && ls -la
-          echo "=== .next ===" && ls -la .next 2>/dev/null || echo "NO .next FOUND"
-          echo "=== BUILD_ID ===" && cat .next/BUILD_ID 2>/dev/null || echo "NO BUILD_ID"
+      - name: Zip deployment package
+        working-directory: ./src/app
+        run: cd deploy && zip -r ../deploy.zip . -x "*.git*"
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'frontend-doco'
           slot-name: 'Production'
-          package: .
+          package: ./src/app/deploy.zip
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_603B0301DCBC48CB9000282FE72DCD53 }}
