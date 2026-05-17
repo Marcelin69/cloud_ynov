@@ -37,9 +37,9 @@ jobs:
         working-directory: ./src/app
         run: |
           mkdir -p build
-          cp -r .next/standalone/* build/
-          cp -r .next/. build/.next/
-          cp -r public build/
+          cp -r .next/standalone/. build/
+          cp -r .next/static build/.next/static
+          cp -r public build/public
 
       # ✅ Upload folder (plus zip fragile)
       - name: Upload artifact
