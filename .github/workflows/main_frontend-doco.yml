@@ -65,6 +65,12 @@ jobs:
         with:
           name: node-app
 
+      - name: Debug downloaded files
+        run: |
+          echo "=== Root ===" && ls -la
+          echo "=== .next ===" && ls -la .next 2>/dev/null || echo "NO .next FOUND"
+          echo "=== BUILD_ID ===" && cat .next/BUILD_ID 2>/dev/null || echo "NO BUILD_ID"
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
