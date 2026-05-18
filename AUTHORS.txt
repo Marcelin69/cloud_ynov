@@ -1,0 +1,56 @@
+TINGOUGOUI Migbedon Marcelin 
+
+Tâches réalisées
+
+Infrastructure Azure
+
+-Configuration Azure Blob Storage, Cosmos DB, Service Bus et SignalR
+-Création des Azure Functions, App Services et environnement cloud
+-Configuration CORS et variables d’environnement
+
+1- Backend — Azure Functions
+
+  - Développement des fonctions :
+      - negotiate (SignalR)
+      - WorkerFile (Blob Trigger)
+      - ProcessJob (Service Bus + IA)
+      - ProcessDLQ (gestion erreurs)
+    - Intégration Azure AI Language pour le tagging automatique
+    - Mise en place du fallback par mots-clés
+    - Gestion des retries et Dead Letter Queue
+
+
+2- CI/CD — GitHub Actions
+
+  - Pipeline de déploiement automatique :
+    - Azure Functions
+    - API FastAPI Dockerisée
+    - Frontend Next.js
+
+3- Documentation & Tests
+
+  - Rédaction du README et du schéma d’architecture
+  - Tests complets du pipeline de traitement
+  - Validation des notifications temps réel et gestion des erreurs
+
+
+Hansly AGBAMATE
+
+Tâches réalisées
+
+1- Backend — API FastAPI
+
+  - Développement des endpoints REST pour la gestion des jobs
+  - Intégration Cosmos DB
+  - Génération d’URL SAS sécurisées pour l’upload Azure Blob Storage
+
+2- Frontend — Next.js
+
+  - Développement de l’interface de création et suivi des jobs
+  - Upload direct vers Azure Blob Storage
+  - Intégration SignalR pour les mises à jour temps réel
+  - Affichage dynamique des statuts et tags IA
+
+ Recherche créés pour le projet 
+
+   - https://learn.microsoft.com/en-us/azure/azure-signalr/signalr-reference-data-plane-rest-api
