@@ -61,8 +61,9 @@ La configuration est entièrement gérée par des variables d'environnement.
 - `SIGNALR_CONNECTION_STRING` : chaîne de connexion Azure SignalR.
 - `SIGNALR_HUB_NAME` : nom du hub SignalR.
   - Valeur par défaut : `jobNotifications`
-- `AZURE_LANGUAGE_ENDPOINT` : endpoint Azure AI Language.
-- `AZURE_LANGUAGE_KEY` : clé Azure AI Language.
+- `OPENAI_API_KEY` : clé API OpenAI pour le modèle Gemini.
+- `OPENAI_MODEL` : nom du modèle OpenAI/Gemini.
+  - Valeur par défaut : `gemini-1.5`
 
 ### Configuration Service Bus + DLQ
 
@@ -110,8 +111,8 @@ COSMOS_CONTAINER=jobs
 SERVICE_BUS_CONNECTION=Endpoint=sb://...;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=...
 SIGNALR_CONNECTION_STRING=Endpoint=https://...;AccessKey=...;Version=1.0;
 SIGNALR_HUB_NAME=jobNotifications
-AZURE_LANGUAGE_ENDPOINT=https://<votre-endpoint>.cognitiveservices.azure.com/
-AZURE_LANGUAGE_KEY=<votre-cle-language>
+OPENAI_API_KEY=<votre-cle-openai>
+OPENAI_MODEL=gemini-1.5
 ```
 
 ---

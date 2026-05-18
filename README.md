@@ -242,9 +242,8 @@ Pour la liste complète des variables de configuration, consultez `CONFIGURATION
 | `SERVICE_BUS_CONNECTION` | Connexion string Service Bus (RootManageSharedAccessKey) |
 | `SIGNALR_CONNECTION_STRING` | Connexion string Azure SignalR |
 | `SIGNALR_HUB_NAME` | Nom du hub SignalR (ex: `jobNotifications`) |
-| `AZURE_OPENAI_ENDPOINT` | URL Azure OpenAI (optionnel) |
-| `AZURE_OPENAI_KEY` | Clé Azure OpenAI (optionnel) |
-| `AZURE_OPENAI_DEPLOYMENT` | Nom du déploiement OpenAI (ex: `gpt-4o-mini`) |
+| `OPENAI_API_KEY` | Clé API OpenAI pour Gemini |
+| `OPENAI_MODEL` | Modèle OpenAI/Gemini à utiliser |
 
 ### API FastAPI
 
